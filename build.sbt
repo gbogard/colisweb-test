@@ -62,12 +62,10 @@ lazy val commonDependencies = Seq(
   "org.typelevel" %% "cats-core" % "1.6.0",
   "org.typelevel" %% "cats-effect" % "1.2.0",
   "org.tpolecat" %% "doobie-core" % doobieVersion,
+  "org.tpolecat" %% "doobie-refined" % doobieVersion,
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
   "org.tpolecat" %% "doobie-scalatest" % doobieVersion,
   "org.tpolecat" %% "doobie-hikari" % doobieVersion,
-)
-
-lazy val serviceDependencies = Seq(
   "org.http4s" %% "http4s-dsl" % http4sVersion,
   "org.http4s" %% "http4s-blaze-server" % http4sVersion,
   "org.http4s" %% "http4s-blaze-client" % http4sVersion,
@@ -96,17 +94,17 @@ lazy val transportersApi = (project in file("transporters-api"))
 lazy val carriersImpl = (project in file("carriers-impl"))
   .settings(
     name := "carriers-impl",
-    libraryDependencies ++= commonDependencies ++ serviceDependencies
+    libraryDependencies ++= commonDependencies
   ).dependsOn(shared, carriersApi)
 
 lazy val transportersImpl = (project in file("transporters-impl"))
   .settings(
     name := "transporters-impl",
-    libraryDependencies ++= commonDependencies ++ serviceDependencies
+    libraryDependencies ++= commonDependencies
   ).dependsOn(shared, carriersApi, transportersApi)
 
 lazy val gateway = (project in file("gateway"))
   .settings(
     name := "gateway",
-    libraryDependencies ++= commonDependencies ++ serviceDependencies
+    libraryDependencies ++= commonDependencies
   ).dependsOn(shared, carriersApi, transportersApi)

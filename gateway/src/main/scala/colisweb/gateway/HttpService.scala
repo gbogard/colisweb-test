@@ -1,6 +1,7 @@
 package colisweb.gateway
 
 import cats.effect._
+import cats.syntax.all._
 import org.http4s._
 import org.http4s.dsl.io._
 import colisweb.carriers.domain.CarrierService
@@ -13,6 +14,7 @@ import org.http4s.implicits._
 import org.http4s.server.Router
 import org.http4s.circe._
 import io.circe.syntax._
+import io.circe._
 
 class HttpService(
   carrierService: CarrierService,
@@ -20,6 +22,15 @@ class HttpService(
 ) {
 
   implicit val transporterDecoder = jsonOf[IO, Transporter]
+
+  private def handleError(error: Throwable): IO[Response[IO]] = error match {
+    case InvalidLicenseException => BadRequest(InvalidLicenseException.getMessage)
+    case InvalidMessageBodyFailure(_, Some(cause)) => handleError(cause)
+    case f: DecodingFailure =>
+      BadRequest(DecodingFailure.showDecodingFailure.show(f))
+    case error: Throwable =>
+      InternalServerError()
+  }
 
   private val root = HttpRoutes.of[IO] {
     case GET -> Root =>
@@ -42,5 +53,5 @@ class HttpService(
   val httpApp = Router(
     "/" -> root,
     "/transporters" -> transporters,
-  ).orNotFound
+  ).orNotFound.mapF(_.handleErrorWith(handleError))
 }
