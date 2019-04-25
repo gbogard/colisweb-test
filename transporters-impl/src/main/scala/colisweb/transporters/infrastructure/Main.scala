@@ -13,6 +13,7 @@ object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = colisweb.shared.Db.transactor.use { xa =>
     BlazeClientBuilder[IO](global).resource.use { client =>
+      val port = sys.env.getOrElse("TRANSPORTER_SERVICE_PORT", "8092").toInt
       val repo = new PostgresTransporterRepository(xa)
       val carrierService = new HttpCarrierService(client)
       val transporterService = new TransporterServiceImpl(carrierService, repo)

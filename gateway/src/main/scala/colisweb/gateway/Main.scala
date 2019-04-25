@@ -14,18 +14,16 @@ import colisweb.transporters.infrastructure.HttpTransporterService
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Main extends IOApp {
-  def handleError(resp: Response[IO]) = resp
 
   def run(args: List[String]): IO[ExitCode] =
     BlazeClientBuilder[IO](global).resource.use { client =>
       val carrierService = new HttpCarrierService(client)
       val transporterService = new HttpTransporterService(client)
+      val httpApp = new HttpService(carrierService, transporterService).httpApp
+      val port = sys.env.getOrElse("GATEWAY_PORT", "8090").toInt
 
-      val httpApp = new HttpService(carrierService, transporterService)
-        .httpApp
-      .map(handleError)
       BlazeServerBuilder[IO]
-        .bindHttp(8090, "localhost")
+        .bindHttp(port, "localhost")
         .withHttpApp(httpApp)
         .resource
         .use(_ => IO.never)

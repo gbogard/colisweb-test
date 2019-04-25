@@ -12,8 +12,9 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = colisweb.shared.Db.transactor.use { xa =>
     val repo = new PostgresCarrierRepository(xa)
     val service = new CarrierServiceImpl(repo)
+    val port = sys.env.getOrElse("CARRIER_SERVICE_PORT", "8091").toInt
     BlazeServerBuilder[IO]
-      .bindHttp(8091, "localhost")
+      .bindHttp(port, "localhost")
       .withHttpApp(new HttpService(service).httpApp)
       .resource
       .use(_ => IO.never)
