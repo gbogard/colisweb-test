@@ -49,7 +49,8 @@ ThisBuild / organization     := "colisweb"
 ThisBuild / scalacOptions in Compile := compilerFlags
 wartremoverErrors ++= Warts.unsafe
 
-val http4sVersion = "0.20.0"
+lazy val http4sVersion = "0.20.0"
+lazy val doobieVersion = "0.6.0"
 
 lazy val commonDependencies = Seq(
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
@@ -60,6 +61,17 @@ lazy val commonDependencies = Seq(
   "eu.timepit" %% "refined-cats" % "0.9.5",
   "org.typelevel" %% "cats-core" % "1.6.0",
   "org.typelevel" %% "cats-effect" % "1.2.0",
+  "org.tpolecat" %% "doobie-core" % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+  "org.tpolecat" %% "doobie-scalatest" % doobieVersion,
+  "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+)
+
+lazy val serviceDependencies = Seq(
+  "org.http4s" %% "http4s-dsl" % http4sVersion,
+  "org.http4s" %% "http4s-blaze-server" % http4sVersion,
+  "org.http4s" %% "http4s-blaze-client" % http4sVersion,
+  "org.http4s" %% "http4s-circe" % http4sVersion,
 )
 
 lazy val shared = (project in file("shared"))
@@ -68,14 +80,33 @@ lazy val shared = (project in file("shared"))
     libraryDependencies ++= commonDependencies
   )
 
-lazy val carriers = (project in file("carriers"))
+lazy val carriersApi = (project in file("carriers-api"))
   .settings(
-    name := "carriers",
+    name := "carriers-api",
     libraryDependencies ++= commonDependencies
-  )
+  ).dependsOn(shared)
 
-lazy val transporters = (project in file("transporters"))
+lazy val transportersApi = (project in file("transporters-api"))
   .settings(
-    name := "transporters",
+    name := "transporters-api",
     libraryDependencies ++= commonDependencies
-  )
+  ).dependsOn(shared, carriersApi)
+
+
+lazy val carriersImpl = (project in file("carriers-impl"))
+  .settings(
+    name := "carriers-impl",
+    libraryDependencies ++= commonDependencies ++ serviceDependencies
+  ).dependsOn(shared, carriersApi)
+
+lazy val transportersImpl = (project in file("transporters-impl"))
+  .settings(
+    name := "transporters-impl",
+    libraryDependencies ++= commonDependencies ++ serviceDependencies
+  ).dependsOn(shared, carriersApi, transportersApi)
+
+lazy val gateway = (project in file("gateway"))
+  .settings(
+    name := "gateway",
+    libraryDependencies ++= commonDependencies ++ serviceDependencies
+  ).dependsOn(shared, carriersApi, transportersApi)
