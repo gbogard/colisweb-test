@@ -17,9 +17,8 @@ object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     BlazeClientBuilder[IO](global).resource.use { client =>
-      val carrierService = new HttpCarrierService(client)
       val transporterService = new HttpTransporterService(client)
-      val httpApp = new HttpService(carrierService, transporterService).httpApp
+      val httpApp = new HttpService(transporterService).httpApp
       val port = sys.env.getOrElse("GATEWAY_PORT", "8090").toInt
 
       BlazeServerBuilder[IO]
@@ -30,3 +29,4 @@ object Main extends IOApp {
         .as(ExitCode.Success)
     }
 }
+

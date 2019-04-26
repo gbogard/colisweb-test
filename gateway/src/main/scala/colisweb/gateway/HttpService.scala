@@ -4,7 +4,6 @@ import cats.effect._
 import cats.syntax.all._
 import org.http4s._
 import org.http4s.dsl.io._
-import colisweb.carriers.domain.CarrierService
 import colisweb.transporters.domain.TransporterService
 import colisweb.transporters.domain.Transporter
 import colisweb.gateway.Filters._
@@ -17,7 +16,6 @@ import io.circe.syntax._
 import io.circe._
 
 class HttpService(
-  carrierService: CarrierService,
   transporterService: TransporterService
 ) {
 

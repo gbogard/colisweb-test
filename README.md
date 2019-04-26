@@ -53,6 +53,12 @@ Gateway should start on port 8090. Port is customizable through the `GATEWAY_POR
 
 // TODO
 
+## Running the tests
+
+```
+sbt test
+```
+
 ## Possible improvements
 
 - Logging : there is currently no log whatsoever
