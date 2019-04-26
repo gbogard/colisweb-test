@@ -73,3 +73,13 @@ the segregation of responsibilities and the code duplication. Genrally speaking,
   - Right now services need to be started on a known port at all time. This is not very scalable nor fault-resilient. A
   service discovery system should allow multiple instances of the same service to run on the same machine without explcicitly
   assigning ports beforehand.
+- Carriers creation retry :
+  - Right now you can create transporters even when carriers creation fails. The carriers creation will be retried in the background
+  four times, with an increasing delay between each attempt. You can test this behaviour by trying to insert a transporter while then
+  carriers service is down, then start the carriers service and wait for a 40 seconds or so.
+  - This retry mechanism could be improved in the following ways :
+    - There is no job persistence, meaning carriers creation will be retried as long as the transporters service is up, but there
+    is no way to recover from a JVM crash and have the application retry the creation on startup
+    - There is no way to be informed of the error when the 4 retries have failed
+    
+    

@@ -1,10 +1,12 @@
 package colisweb.transporters.infrastructure
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import cats.effect.ContextShift
 import cats._
 import cats.data._
 import cats.effect._
+import cats.effect.implicits._
 import cats.syntax.all._
 import colisweb.transporters.domain._
 import colisweb.carriers.domain._
@@ -17,6 +19,18 @@ class TransporterServiceImpl(
 ) extends TransporterService {
 
   implicit val cs = IO.contextShift(ExecutionContext.global)
+  implicit val timer = IO.timer(ExecutionContext.global)
+
+  private def retryWithBackoff[A](ioa: IO[A], initialDelay: FiniteDuration = 10 seconds, maxRetries: Int = 4)
+    (implicit timer: Timer[IO]): IO[A] = {
+
+    ioa.handleErrorWith { error =>
+      if (maxRetries > 0)
+        IO.sleep(initialDelay) *> retryWithBackoff(ioa, initialDelay * 2, maxRetries - 1)
+      else
+        IO.raiseError(error)
+    }
+  }
 
   private def createCarriers(carriers: List[Carrier]): IO[List[Carrier]] = {
     if (carriers.isEmpty) {
@@ -27,14 +41,17 @@ class TransporterServiceImpl(
   }
 
   private def fetchCarriers(transporter: Transporter): IO[List[Carrier]] = transporter.id match {
-    case Some(id) =>  carrierService.getCarriers(WithTransporterId(id) :: Nil)
+    case Some(id) => carrierService.getCarriers(WithTransporterId(id) :: Nil)
     case None => IO.pure(Nil)
   }
 
   def createTransporter(transporter: Transporter): IO[Transporter] = for {
     newTransporter <- transporterRepository.createTransporter(transporter)
     val carriersWithTransporterId = transporter.carriers.map(_.copy(transporter_id = newTransporter.id))
-    newCarriers <- createCarriers(carriersWithTransporterId)
+    val createCarriersIO = createCarriers(carriersWithTransporterId)
+    newCarriers <- createCarriersIO.handleErrorWith { _ =>
+      retryWithBackoff(createCarriersIO).start.map(_ => Nil)
+    }
   } yield newTransporter.copy(carriers = newCarriers)
 
   def getTransporters(filters: List[Filter]): IO[List[Transporter]] = {
